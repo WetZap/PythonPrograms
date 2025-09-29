@@ -27,5 +27,5 @@ pip install -r requirements.txt
 O si no una por una:
 
 ```bash
-pip install 
+pip install matplotlib numpy pandas scipy statistics
 
