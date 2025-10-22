@@ -8,11 +8,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 from scipy.optimize import curve_fit
-from scipy.stats import linregress
 from statistics import stdev
 from statistics import mean
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import PolynomialFeatures
 from scipy import odr
 
 
