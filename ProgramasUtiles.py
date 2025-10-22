@@ -43,7 +43,7 @@ nombre_graf = ''
 
 if opcion == 1:
     print('------------------------------------------------')
-    print('Escogio opción 1, ajuste lineal tipo y = a * x: ')
+    print('Escogió la opción 1, ajuste lineal tipo y = a * x: ')
     print('------------------------------------------------')
 
     print(f"El archivo de datos debe tener la siguiente estructura:\nx{delimitador}y{delimitador}dx{delimitador}dy{delimitador}")
