@@ -36,12 +36,17 @@ delimitador = ''
 # Nombre de la gráfica que se guardara.
 nombre_graf = ''
 
+# Unidades ejex
+unidad_ejex = r''
+# Unidades ejey
+unidad_ejey = r''
+
 
 
 if opcion == 1:
-    print('------------------------------------------------')
+    print('---------------------------------------------------')
     print('Escogió la opción 1, ajuste lineal tipo y = a * x: ')
-    print('------------------------------------------------')
+    print('---------------------------------------------------')
 
     print(f"El archivo de datos debe tener la siguiente estructura:\nx{delimitador}y{delimitador}dx{delimitador}dy{delimitador}")
     
@@ -103,8 +108,8 @@ if opcion == 1:
     plt.plot(data.x, y_pred, 'g-', label='Ajuste',linewidth=4.0)
 
 
-    plt.xlabel(r'$T (s)$',fontsize=25)
-    plt.ylabel(r'$\theta (rad)$',fontsize=25)
+    plt.xlabel(unidad_ejex,fontsize=25)
+    plt.ylabel(unidad_ejey,fontsize=25)
     plt.legend(loc='best',fontsize=25)
     plt.grid()
 
@@ -188,8 +193,8 @@ elif opcion == 2:
     plt.plot(data.x, y_pred, 'g-', label='Ajuste',linewidth=4.0)
 
 
-    plt.xlabel(r'$T (s)$',fontsize=25)
-    plt.ylabel(r'$\theta (rad)$',fontsize=25)
+    plt.xlabel(unidad_ejex,fontsize=25)
+    plt.ylabel(unidad_ejey,fontsize=25)
     plt.legend(loc='best',fontsize=25)
     plt.grid()
 
@@ -275,8 +280,8 @@ elif opcion == 3:
     plt.plot(data.x, y_pred, 'g-', label='Ajuste',linewidth=4.0)
 
 
-    plt.xlabel(r'$T (s)$',fontsize=25)
-    plt.ylabel(r'$\theta (rad)$',fontsize=25)
+    plt.xlabel(unidad_ejex,fontsize=25)
+    plt.ylabel(unidad_ejey,fontsize=25)
     plt.legend(loc='best',fontsize=25)
     plt.grid()
 
@@ -357,8 +362,8 @@ def plot_results(set1, set2, fit1, fit2, intersection, cov):
     
     plt.scatter(x_int, y_int, color='red', s=100, zorder=5, label=f'Intersección: ({x_int:.2f}, {y_int:.2f})')
     
-    plt.xlabel('x')
-    plt.ylabel('y')
+    plt.xlabel(unidad_ejex)
+    plt.ylabel(unidad_ejey)
     plt.title('Ajuste lineal e intersección con incertidumbres')
     plt.legend()
     plt.grid(True)
