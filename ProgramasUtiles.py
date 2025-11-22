@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 from scipy.optimize import curve_fit
+from scipy.interpolate import CubicSpline
 from statistics import stdev
 from statistics import mean
 from scipy import odr
@@ -24,6 +25,7 @@ def menu():
     print('3. Ajuste lineal tipo y = ax² + bx + c con incertidumbre')
     print('4. Ajuste de dos conjuntos de datos y determinación de intersección (desarrollo)')
     print('5. Ajuste por minimos cuadrados')
+    print('6. Realizar un spline cubico a unos datos dados')
     print('0. Salir')
     print('---------------------------------------------------')
     return input('Ingrese el número de la opción deseada: ')
@@ -36,19 +38,23 @@ Lista de numeros para los programas, debera cambiar el valor de opción para eje
 3 Ajuste lineal tipo y = ax² + bx + c con incertidumbre
 4 Ajuste de dos conjuntos de datos y determinación de intersección (desarrollo)
 5 Ajuste por minimos cuadrados
+6 Realizar un spline cubico a unos datos dados
 
 
 '''
 opcion = 1
 
 # Esta sera la ruta en la que se encuentran los datos, el archivo debe estar en .csv
-file_name = ''
+file_name = 'Datos.csv'
 
 # Ahora escribiremos el delimitador, si lo has separado con espacios, con comas, con tabuladores:
-delimitador = ''
+delimitador = '	'
 
 # Nombre de la gráfica que se guardara.
 nombre_graf = ''
+
+# Decimal utilizado en el archivo de datos, por defecto es el punto:
+decimal = '.'
 
 # Unidades ejex
 unidad_ejex = r''
@@ -71,7 +77,7 @@ while opcion != "0":
 
         ### Lectura de datos
 
-        data = pd.read_csv(file_name, delimiter=delimitador, header=0, names=['x', 'y','dx', 'dy'])
+        data = pd.read_csv(file_name, delimiter=delimitador, header=0, names=['x', 'y','dx', 'dy'],decimal=decimal)
         print(data)
 
         ### Ajuste
@@ -138,8 +144,8 @@ while opcion != "0":
         # Aquí dibuja el gráfico que hemos definido.
         plt.savefig(nombre_graf)
         plt.show()
-        opcion = menu()
         input("Presione Enter para continuar...")
+        opcion = menu()
     elif opcion == "2":
         print('----------------------------------------------------')
         print('Escogio opción 2, ajuste lineal tipo y = a * x + b: ')
@@ -154,7 +160,7 @@ while opcion != "0":
 
         ### Lectura de datos
 
-        data = pd.read_csv(file_name, delimiter=delimitador, header=0, names=['x', 'y','dx', 'dy'])
+        data = pd.read_csv(file_name, delimiter=delimitador, header=0, names=['x', 'y','dx', 'dy'], decimal=decimal)
         print(data)
 
         ### Ajuste
@@ -224,8 +230,8 @@ while opcion != "0":
         # Aquí dibuja el gráfico que hemos definido.
         plt.savefig(nombre_graf)
         plt.show()
-        opcion = menu()
         input("Presione Enter para continuar...")
+        opcion = menu()
 
     elif opcion == "3":
         print('-------------------------------------------------------------')
@@ -241,7 +247,7 @@ while opcion != "0":
 
         ### Lectura de datos
 
-        data = pd.read_csv(file_name, delimiter=delimitador, header=0, names=['x', 'y','dx', 'dy'])
+        data = pd.read_csv(file_name, delimiter=delimitador, header=0, names=['x', 'y','dx', 'dy'], decimal=decimal)
         print(data)
 
         ### Ajuste
@@ -313,8 +319,8 @@ while opcion != "0":
         # Aquí dibuja el gráfico que hemos definido.
         plt.savefig(nombre_graf)
         plt.show()
-        opcion = menu()
         input("Presione Enter para continuar...")
+        opcion = menu()
     elif opcion == "4":
         print('------------------------------------------------------------------------------------')
         print('Escogio opción 4, ajuste de dos conjuntos de datos y determinación de intersección: ')
@@ -441,14 +447,15 @@ while opcion != "0":
             except Exception as e:
                 print(f"Error: {str(e)}")
 
-
+        input("Presione Enter para continuar...")
+        opcion = menu()
     elif opcion == "5":
         print('---------------------------------------------------')
         print('Escogió la opción 5, ajuste por mínimos cuadrados: ')
         print('---------------------------------------------------')
         # === 1. Cargar datos desde CSV ===
 
-        datos = pd.read_csv(file_name,delimiter=delimitador, header=0,names=["x","y","dx","dy"])
+        datos = pd.read_csv(file_name,delimiter=delimitador, header=0,names=["x","y","dx","dy"],decimal=decimal)
         # Extraer columnas
         x = np.array(datos["x"])
         y = np.array(datos["y"])
@@ -501,8 +508,44 @@ while opcion != "0":
 
         plt.savefig(nombre_graf)
         plt.show()
-        opcion = menu()
+
         input("Presione Enter para continuar...")
+        opcion = menu()
+
+    elif opcion == "6":
+        print('---------------------------------------------------')
+        print('Escogió la opción 6, spline cúbico a unos datos dados: ')
+        print('---------------------------------------------------')
+
+        data = pd.read_csv(file_name, delimiter=delimitador, header=0, names=['x', 'y'], decimal=decimal)
+        print(data)
+        eje_x = np.array([fila for fila in data['x']])
+        eje_y = np.array([fila for fila in data['y']])
+        cs = CubicSpline(eje_x, eje_y, bc_type="natural")
+
+        funcion = lambda x: cs(x)
+        x_fino = np.linspace(eje_x.min(), eje_x.max(), 1000)
+        plt.figure(figsize=(8, 4))
+        plt.plot(eje_x, eje_y, "o", label="Datos")
+        plt.plot(x_fino, funcion(x_fino), "-", label="Spline Datos")
+        plt.legend(loc='best', fontsize=25)
+        plt.grid(True)
+        plt.show()
+
+        xs = cs.x        # nodos
+        coef = cs.c 
+        with open('spline_tramos.txt', 'w') as f:
+            for i in range(len(xs) - 1):
+                a3, a2, a1, a0 = coef[:, i]
+                x_i = xs[i]
+                f.write("Estructura del spline cúbico por tramos:\n")
+                f.write('Tramo_i:   para x_i <= ν <= xs[i+1]: C_i(ν) = a3*(ν-x_i)**3 + a2*(ν-x_i)**2 + a1*(ν-x_i) + a0\n"')
+                f.write(f"Tramo {i}:   para {x_i} <= ν <= {xs[i+1]}: C_i(ν) = {a3}*(ν-{x_i})**3 + {a2}*(ν-{x_i})**2 + {a1}*(ν-{x_i}) + {a0}\n")
+
+
+        input("Presione Enter para continuar...")
+        opcion = menu()
+
     else:
         print("Opción no válida. Por favor, seleccione una opción del menú.")
         opcion = menu()
