@@ -12,6 +12,8 @@ from scipy.interpolate import CubicSpline
 from statistics import stdev
 from statistics import mean
 from scipy import odr
+import argparse
+
 
 # Funciones
 
@@ -24,8 +26,10 @@ def menu():
     print('2. Ajuste lineal tipo y = ax + b con incertidumbre')
     print('3. Ajuste lineal tipo y = ax² + bx + c con incertidumbre')
     print('4. Ajuste de dos conjuntos de datos y determinación de intersección (desarrollo)')
-    print('5. Ajuste por minimos cuadrados')
-    print('6. Realizar un spline cubico a unos datos dados')
+    print('5. Ajuste por minimos cuadrados (y = ax + b)')
+    print('6. Ajuste por minimos cuadrados (y = ax)')
+    print('7. Realizar un spline cubico a unos datos dados')
+    print('8. Realizar un ajuste no lineal a unos datos dados')
     print('0. Salir')
     print('---------------------------------------------------')
     return input('Ingrese el número de la opción deseada: ')
@@ -37,9 +41,11 @@ Lista de numeros para los programas, debera cambiar el valor de opción para eje
 2 Ajuste lineal tipo y = ax + b con incertidumbre
 3 Ajuste lineal tipo y = ax² + bx + c con incertidumbre
 4 Ajuste de dos conjuntos de datos y determinación de intersección (desarrollo)
-5 Ajuste por minimos cuadrados
-6 Realizar un spline cubico a unos datos dados
-
+5 Ajuste por minimos cuadrados (y = ax + b)
+6 Ajuste por minimos cuadrados (y = ax)
+7 Realizar un spline cubico a unos datos dados
+8 Realizar un ajuste no lineal a unos datos dados
+0 Salir
 
 '''
 opcion = 1
@@ -47,8 +53,9 @@ opcion = 1
 # Esta sera la ruta en la que se encuentran los datos, el archivo debe estar en .csv
 file_name = 'Datos.csv'
 
+
 # Ahora escribiremos el delimitador, si lo has separado con espacios, con comas, con tabuladores:
-delimitador = '	'
+delimitador = ','
 
 # Nombre de la gráfica que se guardara.
 nombre_graf = ''
@@ -56,10 +63,28 @@ nombre_graf = ''
 # Decimal utilizado en el archivo de datos, por defecto es el punto:
 decimal = '.'
 
+
+# Variable para ajustes no lineales ( opción 8 ) la variable sera x con algun coeficiente 
+# Ejemplo ax**2
+expresion_no_lineal = ''
+
 # Unidades ejex
 unidad_ejex = r''
 # Unidades ejey
 unidad_ejey = r''
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--file", type=str, required=True, help="Nombre del archivo de datos o ruta del archivo")
+parser.add_argument("--out_name", type=str, help="Nombre del archivo de la gráfica de salida")
+parser.add_argument("--delimi", type=str,  help="Delimitador de los datos")
+parser.add_argument("--decimal", type=str, help="Decimal utilizado en el archivo de datos")
+
+args = parser.parse_args()
+file_name = args.file
+nombre_graf = args.out_name if args.out_name else 'grafica_salida.png'
+delimitador = args.delimi if args.delimi else ','
+decimal = args.decimal if args.decimal else '.'
+
 
 opcion = menu()
 while opcion != "0":
@@ -451,7 +476,7 @@ while opcion != "0":
         opcion = menu()
     elif opcion == "5":
         print('---------------------------------------------------')
-        print('Escogió la opción 5, ajuste por mínimos cuadrados: ')
+        print('Escogió la opción 5, ajuste por mínimos cuadrados (y = a·x + b): ')
         print('---------------------------------------------------')
         # === 1. Cargar datos desde CSV ===
 
@@ -511,10 +536,72 @@ while opcion != "0":
 
         input("Presione Enter para continuar...")
         opcion = menu()
-
     elif opcion == "6":
         print('---------------------------------------------------')
-        print('Escogió la opción 6, spline cúbico a unos datos dados: ')
+        print('Escogió la opción 6, ajuste por mínimos cuadrados (y = a·x): ')
+        print('---------------------------------------------------')
+        # === 1. Cargar datos desde CSV ===
+
+        datos = pd.read_csv(file_name,delimiter=delimitador, header=0,names=["x","y","dx","dy"],decimal=decimal)
+        # Extraer columnas
+        x = np.array(datos["x"])
+        y = np.array(datos["y"])
+        ex = np.array(datos["dx"])   # Incertidumbre en x 
+        ey = np.array(datos["dy"])   # Incertidumbre en y
+
+        # === 2. Cálculo del ajuste lineal ponderado ===
+        # Ponderaciones = 1/ey^2
+        w = 1 / ey**2
+
+        # Parámetros intermedios
+        S = np.sum(w)
+        Sx = np.sum(w * x)
+        Sy = np.sum(w * y)
+        Sxx = np.sum(w * x**2)
+        Sxy = np.sum(w * x * y)
+        Delta = S * Sxx - Sx**2
+
+        # Coeficientes del ajuste y = a*x + b
+        a = (S * Sxy - Sx * Sy) / Delta
+        b = (Sxx * Sy - Sx * Sxy) / Delta
+
+        # Incertidumbres de los parámetros
+        sigma_a = np.sqrt(S / Delta)
+        sigma_b = np.sqrt(Sxx / Delta)
+
+        # === 3. Resultados ===
+        print("=== Resultados del ajuste ponderado ===")
+        print(f"Ajuste lineal: y = ({a:.8f} ± {sigma_a:.12f})·x + ({b:.4f} ± {sigma_b:.4f})")
+
+        # === 4. Cálculo de valores ajustados ===
+        y_ajuste = a * x
+
+        # === 5. Cálculo del chi-cuadrado reducido (bondad del ajuste) ===
+        chi2 = np.sum(((y - y_ajuste) / ey)**2)
+        ndof = len(x) - 2
+        chi2_red = chi2 / ndof
+        print(f"Chi² reducido = {chi2_red:.3f}")
+
+        # === 6. Gráfica ===
+        plt.errorbar(x, y, xerr=ex, yerr=ey, fmt='o', label='Datos experimentales', color='blue', ecolor='gray', capsize=4)
+        plt.plot(x, y_ajuste, color='red', label='Ajuste lineal ponderado')
+
+        plt.xlabel(unidad_ejex,fontsize=25)
+        plt.ylabel(unidad_ejey,fontsize=25)
+
+        plt.legend(loc='best',fontsize=25)
+        plt.grid(True)
+
+
+        plt.savefig(nombre_graf)
+        plt.show()
+
+        input("Presione Enter para continuar...")
+        opcion = menu()
+
+    elif opcion == "7":
+        print('---------------------------------------------------')
+        print('Escogió la opción 7, spline cúbico a unos datos dados: ')
         print('---------------------------------------------------')
 
         data = pd.read_csv(file_name, delimiter=delimitador, header=0, names=['x', 'y'], decimal=decimal)
@@ -545,6 +632,95 @@ while opcion != "0":
 
         input("Presione Enter para continuar...")
         opcion = menu()
+
+
+    elif opcion == "8":
+        print('---------------------------------------------------')
+        print('Escogió la opción 8, ajuste no lineal a unos datos dados: ')
+        print('---------------------------------------------------')
+        
+
+        print(f"El archivo de datos debe tener la siguiente estructura:\nx{delimitador}y{delimitador}dx{delimitador}dy{delimitador}")
+        
+        ### Función de ajuste
+
+        def func(x, a):
+            return eval(expresion_no_lineal)
+
+        ### Lectura de datos
+
+        data = pd.read_csv(file_name, delimiter=delimitador, header=0, names=['x', 'y','dx', 'dy'],decimal=decimal)
+        print(data)
+
+        ### Ajuste
+
+        popt, pcov = curve_fit(func, data.x, data.y, sigma=data.dy, absolute_sigma=True,maxfev=10000)
+
+        y_pred = func(data.x, *popt)
+
+        r = data.y - y_pred
+        chisq = sum((r / data.dy) ** 2)
+        mediax = mean(data.x)
+        mediay = mean(data.y)
+
+        mediaxy = mean(data.x*data.y)
+        sigmax = stdev(data.x)
+        sigmay = stdev(data.y)
+        coef_Pearson = len(data.x)*(mediaxy-mediax*mediay)/((len(data.x)-1)*sigmax*sigmay)
+
+        ### Salida de resultados
+
+        print(f'   a: {popt[0]} \u00B1 {np.sqrt(pcov.diagonal())[0]}')
+        print('')
+        print(f'chi\u00b2: {chisq}')
+        print('')
+        print(f'media x: {mediax}')
+        print(f'media y: {mediay}')
+        print(f'media xy: {mediaxy}')
+        print(f'Sigma x: {sigmax}')
+        print(f'Sigma y: {sigmay}')
+        print(f'Coeficiente de Pearson: {coef_Pearson}')
+
+        ### Gráfica
+        # - figure crea la figura con el tamaño indicado (los valores son en pulgadas y el valor por defecto de número de puntos por pulgada es 100).
+        # - errorbar muestra los datos data.x y data.y con sus errores (data.dx y data.dy).
+        #     - el formato es puntos de color azul: format='b.'
+        #     - label es la etiqueta que aparecerá en la leyenda
+        #     - definimos el grosor de las líneas con linewidth
+        # - plot lo usamos para mostrar la recta de regresión.
+        #     - Aquí indicamos que el formato es una línea roja: format='r-'
+        # - xlim e ylim definen los límites de los ejes x e y respectivamente.
+        # - xlabel e ylabel definen la etiqueta de los ejes x e y respectivamente
+        #     - Podemos definir una etiqueta en formato LaTex poniendo r antes de la cadena de texto y la exprexión LaTex entre simbolos $ (mira ylabel)
+        # - legend muestra la leyenda.
+
+        fig=plt.figure(figsize=[18,12])
+        ax=fig.gca()
+        plt.errorbar(data.x, data.y, xerr=data.dx, yerr=data.dy, fmt='b.', label='Datos', linewidth=3)
+        plt.plot(data.x, y_pred, 'g-', label='Ajuste',linewidth=4.0)
+
+
+        plt.xlabel(unidad_ejex,fontsize=25)
+        plt.ylabel(unidad_ejey,fontsize=25)
+        plt.legend(loc='best',fontsize=25)
+        plt.grid()
+
+        # Este comando permite modificar el grosor de los ejes:
+        for axis in ['top','bottom','left','right']:
+            ax.spines[axis].set_linewidth(4)
+
+        # Con estas líneas podemos dar formato a los "ticks" de los ejes:
+        plt.tick_params(axis="x", labelsize=25, labelrotation=0, labelcolor="black")
+        plt.tick_params(axis="y", labelsize=25, labelrotation=0, labelcolor="black")
+
+        # Aquí dibuja el gráfico que hemos definido.
+        plt.savefig(nombre_graf)
+        plt.show()
+        
+        input("Presione Enter para continuar...")
+        opcion = menu()
+
+
 
     else:
         print("Opción no válida. Por favor, seleccione una opción del menú.")
