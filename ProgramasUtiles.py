@@ -76,14 +76,14 @@ unidad_ejey = r''
 parser = argparse.ArgumentParser()
 parser.add_argument("--file", type=str, required=True, help="Nombre del archivo de datos o ruta del archivo")
 parser.add_argument("--out_name", type=str, help="Nombre del archivo de la gráfica de salida")
-parser.add_argument("--delimi", type=str,  help="Delimitador de los datos")
-parser.add_argument("--decimal", type=str, help="Decimal utilizado en el archivo de datos")
+parser.add_argument("--deli", type=str,  help="Delimitador de los datos")
+parser.add_argument("--dec", type=str, help="Decimal utilizado en el archivo de datos")
 
 args = parser.parse_args()
 file_name = args.file
 nombre_graf = args.out_name if args.out_name else 'grafica_salida.png'
-delimitador = args.delimi if args.delimi else ','
-decimal = args.decimal if args.decimal else '.'
+delimitador = args.deli if args.deli else ','
+decimal = args.dec if args.dec else '.'
 
 
 opcion = menu()
